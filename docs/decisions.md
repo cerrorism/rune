@@ -40,3 +40,27 @@ When a `[REVERSAL]` entry in `findings.md` maps back to an ADR, note it in the f
 **Why:** The flat `module_name.rs` style is the modern Rust convention (post-2018 edition). It makes directory listings and `grep` results cleaner — you see `storage.rs` instead of multiple files all called `mod.rs`. IDEs also handle it better.
 
 **Consequences:** As modules grow, they start as `src/storage.rs` and are promoted to `src/storage/mod.rs` + sub-files only when there's a genuine need for sub-modules. Don't create the directory structure preemptively.
+
+---
+
+## ADR-004: Use the official Parquet crate
+**Date:** 2026-05-07
+**Status:** accepted
+
+**Decision:** Rune will use the official Apache Arrow `parquet` crate for Parquet read/write support. The first API boundary is Arrow `RecordBatch`, supported by `arrow-array` and `arrow-schema`.
+
+**Why:** The Parquet file format is complex enough that reimplementing it would obscure the Rust learning goals. Using the official crate keeps the project focused on data lake concepts, typed APIs, error handling, and how Rust code composes existing libraries.
+
+**Consequences:** Arrow concepts arrive earlier than originally planned. The first implementation intentionally stays small: write a slice of `RecordBatch` values to a local file and read a local file back into `RecordBatch` values.
+
+---
+
+## ADR-005: Use Arrow RecordBatch as the in-memory columnar protocol
+**Date:** 2026-05-07
+**Status:** accepted
+
+**Decision:** Rune will use Arrow `RecordBatch` as the standard in-memory representation for physical columnar data. Format adapters such as `src/formats/parquet.rs` may expose `RecordBatch` directly in their public APIs.
+
+**Why:** Arrow is the standard in-memory columnar representation in the Rust analytical data ecosystem. Parquet is the storage format; Arrow is the memory format. Replacing `RecordBatch` with a Rune-owned wrapper now would mostly add forwarding code without clarifying the learning goals.
+
+**Consequences:** Query and format code may depend on Arrow types. Metadata and table-management code should still use Rune-owned structs such as `Manifest`, `FileEntry`, and future table metadata types. If Rune later needs extra invariants or a narrower API, it can introduce a wrapper around `RecordBatch` at that point.

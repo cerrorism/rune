@@ -30,6 +30,7 @@ Scan a local directory tree, detect Parquet and CSV files, infer partition struc
 |---|---|---|
 | metadata | `src/metadata/manifest.rs` | Define `FileEntry`, `Manifest`; serialize/deserialize |
 | storage | `src/storage/local.rs` | Walk directory, return file metadata |
+| formats | `src/formats/parquet.rs` | Read/write Parquet files through the official `parquet` crate |
 | (trait) | `src/storage/mod.rs` | First sketch of `StorageBackend` trait |
 | binary | `src/main.rs` | Wire together: accept path, run scan, print JSON |
 
@@ -79,6 +80,9 @@ Use `split_once('=')` on each path segment — no regex dependency. A segment li
 - Partition parsing uses `str::split_once('=')`, not the `regex` crate. Reason: `regex` is an unnecessary dependency for a task that standard string methods handle; `Iterator` combinators are a better learning exercise at this phase.
 - `FileEntry` uses owned `String` for `path`, not `&str`. Reason: `FileEntry` values are stored in a `Vec` and serialized, so they must own their data. `&str` would require lifetime annotations that are premature here.
 - `Unknown` file types are included in the manifest (not silently skipped). Reason: skipping silently hides information; the manifest should be a faithful record.
+- Parquet files are read and written through the official Apache Arrow `parquet` crate, using Arrow `RecordBatch` as the in-memory boundary. Reason: the Parquet format is too complex to reimplement productively in this learning project.
+- Arrow `RecordBatch` is accepted as Rune's in-memory columnar protocol for physical data. Reason: it is the ecosystem-standard representation and avoids creating a thin Rune-owned wrapper before there are Rune-specific invariants to enforce.
+- Parquet write configuration is represented by Rune's `ParquetWriteOptions`. Rune sets explicit defaults for compression (`ZSTD`), writer version (`PARQUET_2_0`), fallback encoding (`PLAIN`), dictionary encoding (`true`), page statistics, row group sizing, data page sizing, and write batch sizing. Reason: these are write-time storage choices; readers discover compression and encoding from Parquet file metadata and should not require the caller to provide them.
 
 ## Open questions
 

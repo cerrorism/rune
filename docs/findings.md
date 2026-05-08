@@ -37,3 +37,7 @@ Scan the active phase's section at the start of every session.
 ## Cross-phase findings
 
 *(Rust language findings that are not specific to one phase go here.)*
+
+- [RUST] Prefer `impl Trait` for simple one-off parameter bounds, such as `path: impl AsRef<Path>`. Use a named generic with a `where` clause when the type parameter appears in multiple places to enforce “same concrete type”, or when naming the type makes the signature easier to understand. Principle: introduce a generic type name only when the name carries information or expresses a real type relationship.
+- [RUST] Prefer borrowed slices like `&[RecordBatch]` when a function only needs to read caller-owned data, and return owned containers like `Vec<RecordBatch>` when the function creates data that must outlive the function call. Principle: borrow inputs you do not need to own; return ownership for values created inside the function.
+- [RUST] A Rust function returns one error type in `Result<T, E>`. For library code that can fail in multiple ways, define an enum that aggregates the possible error cases, then use `#[from]` conversions so `?` can wrap underlying errors into that enum. Principle: Rust error handling is explicit type conversion into one declared error type, not exception hierarchy matching.
